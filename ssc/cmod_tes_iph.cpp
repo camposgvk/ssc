@@ -304,6 +304,7 @@ public:
             T_cr_out_hot, T_sink_out_cold,
             T_sink_htf_in_hot, T_cr_in_cold, outputs
         );
+        storage.converged();  // storage.mc_hot_tank.get_m_T_calc();
         double T_tank_hot = storage.get_hot_temp();
         double T_tank_cold = storage.get_cold_temp();
         double hot_tank_vol_frac = storage.get_hot_tank_vol_frac();
