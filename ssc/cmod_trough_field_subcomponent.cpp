@@ -60,6 +60,13 @@ static var_info _cm_vtab_trough_field_subcomponent[] = {
 
     { SSC_INPUT,        SSC_NUMBER,      "sim_type",                  "1 (default): timeseries, 2: design only",                                          "",             "",               "System Control", "?=1",                    "",                       "SIMULATION_PARAMETER"},
 
+    // Case Parameters
+    { SSC_INPUT,        SSC_NUMBER,      "time_step",                 "Length of time step",                                                              "s",            "",               "",               "*",                      "",                       ""},
+    { SSC_INPUT,        SSC_NUMBER,      "start_step",                "Number of time steps (from beginning of year) to start",                           "-",            "",               "",               "*",                      "",                       ""},
+    { SSC_INPUT,        SSC_NUMBER,      "m_dot_htf_in",              "HTF mass flow rate into field",                                                    "kg/s",         "",               "",               "*",                      "",                       ""},
+    { SSC_INPUT,        SSC_NUMBER,      "T_htf_in",                  "Temperature of HTF into field",                                                    "C",            "",               "",               "*",                      "",                       ""},
+
+
     // Weather Reader
     { SSC_INPUT,        SSC_STRING,      "file_name",                 "Local weather file with path",                                                     "none",         "",               "weather",        "?",                       "LOCAL_FILE",            "" },
     { SSC_INPUT,        SSC_TABLE,       "solar_resource_data",       "Weather resource data in memory",                                                  "",             "",               "weather",        "?",                       "",                      "SIMULATION_PARAMETER" },
@@ -722,25 +729,19 @@ public:
         // Simulate
         int mode = 1;
 
-        double T_htf_inlet = 90;    // [C]
-        double mdot_htf_inlet = 1;  // [kg/s]
+        double T_htf_inlet = as_double("T_htf_in");    // [C]
+        double mdot_htf_inlet = as_double("m_dot_htf_in");  // [kg/s]
 
         // ON
         if (mode == 1)
         {
-            // Starting Time (starts at 0 = Jan 1, midnight)
-            double day = 4;     // [day] (starts at 0!!!!!!)
-            double hr = 12;     // [hr]
-
-            // Time step (simulation duration)
-            double step = 3600; // [s]
+            double time_step = as_double("time_step");          // [s]
+            double start_time_step = as_double("start_step");   // start time (number of steps from janurary 1)
 
             C_csp_solver_sim_info sim_info;
-            sim_info.ms_ts.m_step = step;       // [s] Size of timestep
+            sim_info.ms_ts.m_step = time_step;       // [s] Size of timestep
 
-            double num_steps = (24 * day) + hr;              // Number of time steps (i.e. if step == 1 hr, then this would be hrs)
-
-            weather_reader.read_time_step(num_steps, sim_info);
+            weather_reader.read_time_step(start_time_step, sim_info);
             weather_reader.ms_outputs;
 
             // HTF State
@@ -758,6 +759,8 @@ public:
             c_trough.on(weather_reader.ms_outputs, htf_state, q_dot_elec_to_CR_heat, field_control,
                 cr_out_solver, sim_info);
             c_trough.converged();
+
+            
         }
 
         // Output
