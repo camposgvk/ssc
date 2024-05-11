@@ -48,6 +48,9 @@ static var_info _cm_vtab_csp_subcomponent[] = {
     { SSC_INPUT,        SSC_ARRAY,       "hot_tank_bypassed",         "Is mass flow from source going straight to cold tank?",                            "-",            "",               "TES",            "*",                       "",                      "" },
     { SSC_INPUT,        SSC_ARRAY,       "T_src_out",                 "Temperature from heat source",                                                     "C",            "",               "TES",            "*",                       "",                      "" },
     { SSC_INPUT,        SSC_ARRAY,       "T_sink_out",                "Temperature from heat sink or power block",                                        "C",            "",               "TES",            "*",                       "",                      "" },
+    { SSC_INPUT,        SSC_NUMBER,      "T_tank_hot_ini",            "Temperature of fluid in hot tank at beginning of step",                            "C",            "",               "TES",            "*",                       "",                      "" },
+    { SSC_INPUT,        SSC_NUMBER,      "T_tank_cold_ini",           "Temperature of fluid in cold tank at beginning of step",                           "C",            "",               "TES",            "*",                       "",                      "" },
+
 
     // TES
     { SSC_INPUT,        SSC_NUMBER,      "Fluid",                     "Field HTF fluid ID number",                                                        "-",            "",               "solar_field",    "*",                       "",                      "" },
@@ -92,6 +95,7 @@ static var_info _cm_vtab_csp_subcomponent[] = {
     { SSC_OUTPUT,       SSC_ARRAY,       "T_sink_in",                 "Temperature to heat sink or power block",                                          "C",            "",               "TES",            "*",                       "",                      "" },
     { SSC_OUTPUT,       SSC_ARRAY,       "T_tank_cold",               "Temperature of cold tank (average)",                                               "C",            "",               "TES",            "*",                       "",                      "" },
     { SSC_OUTPUT,       SSC_ARRAY,       "T_tank_hot",                "Temperature of hot tank (average)",                                                "C",            "",               "TES",            "*",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_ARRAY,       "hot_tank_vol_frac",         "Hot tank volume fraction of total",                                                "",             "",               "TES",            "*",                       "",                      "" },
 
     var_info_invalid };
 
@@ -131,8 +135,8 @@ public:
             as_double("dt_hot"),                                                // [C] Temperature difference across heat exchanger - assume hot and cold deltaTs are equal
             as_double("T_loop_in_des"),                                         // [C] convert to K in init()
             as_double("T_loop_out"),                                            // [C] convert to K in init()
-            as_double("T_loop_out"),                                            // [C] Initial temperature in hot storage tank
-            as_double("T_loop_in_des"),                                         // [C] Initial temperature in cold storage cold
+            as_double("T_tank_hot_ini"),                                        // [C] Initial temperature in hot storage tank
+            as_double("T_tank_cold_ini"),                                       // [C] Initial temperature in cold storage cold
             as_double("h_tank_min"),                                            // [m] Minimum allowable HTF height in storage tank
             as_double("init_hot_htf_percent"),                                  // [%] Initial fraction of available volume that is hot
             as_double("pb_pump_coef"),                                          // [kW/kg/s] Pumping power to move 1 kg/s of HTF through power cycle
@@ -183,6 +187,7 @@ public:
         double* T_sink_in = allocate("T_sink_in", n_steps);
         double* T_tank_cold = allocate("T_tank_cold", n_steps);
         double* T_tank_hot = allocate("T_tank_hot", n_steps);
+        double* hot_tank_vol_frac = allocate("hot_tank_vol_frac", n_steps);
 
         // Simulate
         for (size_t i = 0; i < n_steps; i++) {
@@ -209,6 +214,7 @@ public:
             T_sink_in[i] = K_to_C(T_sink_in_K);
             T_tank_cold[i] = K_to_C(tes.get_cold_temp());
             T_tank_hot[i] = K_to_C(tes.get_hot_temp());
+            hot_tank_vol_frac[i] = tes.get_hot_tank_vol_frac();
         }
     }
 };

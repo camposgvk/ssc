@@ -64,7 +64,7 @@ static var_info _cm_vtab_trough_field_subcomponent[] = {
     { SSC_INPUT,        SSC_NUMBER,      "time_step",                 "Length of time step",                                                              "s",            "",               "",               "*",                      "",                       ""},
     { SSC_INPUT,        SSC_NUMBER,      "start_step",                "Number of time steps (from beginning of year) to start",                           "-",            "",               "",               "*",                      "",                       ""},
     { SSC_INPUT,        SSC_NUMBER,      "T_htf_in",                  "Temperature of HTF into field",                                                    "C",            "",               "",               "*",                      "",                       ""},
-
+    { SSC_INPUT,        SSC_NUMBER,      "field_mode",                "",                                          "",             "",               "System Control", "?=1",                    "",                       "SIMULATION_PARAMETER"},
 
     // Weather Reader
     { SSC_INPUT,        SSC_STRING,      "file_name",                 "Local weather file with path",                                                     "none",         "",               "weather",        "?",                       "LOCAL_FILE",            "" },
@@ -694,7 +694,7 @@ public:
             return;
 
         // Simulate
-        int mode = 1;
+        int mode = 3;
         double T_htf_inlet = as_double("T_htf_in");    // [C]
 
         // ON
@@ -722,51 +722,100 @@ public:
                 cr_out_solver, sim_info);
             c_trough.converged();
 
-            // Allocate trough outputs
-            {
-                this->assign("Theta_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_THETA_AVE));
-                this->assign("CosTh_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_THETA_AVE));
-                this->assign("IAM_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_IAM_AVE));
-                this->assign("RowShadow_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_ROWSHADOW_AVE));
-                this->assign("EndLoss_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_ENDLOSS_AVE));
-                this->assign("dni_costh", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DNI_COSTH));
-                this->assign("EqOpteff", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_EQUIV_OPT_ETA_TOT));
-                this->assign("SCAs_def", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS));
-
-                this->assign("q_inc_sf_tot", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_INC_SF_TOT));
-                this->assign("qinc_costh", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_INC_SF_COSTH));
-                this->assign("q_dot_rec_inc", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_REC_INC));
-                this->assign("q_dot_rec_thermal_loss", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_REC_THERMAL_LOSS));
-                this->assign("q_dot_rec_abs", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_REC_ABS));
-                this->assign("q_dot_piping_loss", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_PIPING_LOSS));
-                this->assign("e_dot_field_int_energy", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_E_DOT_INTERNAL_ENERGY));
-                this->assign("q_dot_htf_sf_out", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_HTF_OUT));
-                this->assign("q_dot_freeze_prot", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_FREEZE_PROT));
-
-                this->assign("m_dot_loop", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_M_DOT_LOOP));
-                this->assign("recirculating", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_IS_RECIRCULATING));
-                this->assign("m_dot_field_recirc", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_M_DOT_FIELD_RECIRC));
-                this->assign("m_dot_field_delivered", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_M_DOT_FIELD_DELIVERED));
-                this->assign("T_field_cold_in", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_T_FIELD_COLD_IN));
-                this->assign("T_rec_cold_in", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_T_REC_COLD_IN));
-                this->assign("T_rec_hot_out", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_T_REC_HOT_OUT));
-                this->assign("T_field_hot_out", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_T_FIELD_HOT_OUT));
-                this->assign("deltaP_field", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_PRESSURE_DROP));
-
-                this->assign("W_dot_sca_track", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_W_DOT_SCA_TRACK));
-                this->assign("W_dot_field_pump", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_W_DOT_PUMP));
-
-                std::vector<double> T_out_scas_last_final_K = c_trough.get_scas_outlet_temps();   // [K]
-                std::vector<double> T_out_scas_last_final_C;
-                for (double temp : T_out_scas_last_final_K)
-                    T_out_scas_last_final_C.push_back(temp - 273.15);                             // [C]
-
-                ssc_number_t* p_T_out_scas_last_final = allocate("T_out_scas_last_final", T_out_scas_last_final_C.size());
-                std::copy(T_out_scas_last_final_C.begin(), T_out_scas_last_final_C.end(), p_T_out_scas_last_final);
-
-            }
-
             
+        }
+        // OFF
+        if (mode == 2)
+        {
+            double time_step = as_double("time_step");          // [s]
+            double start_time_step = as_double("start_step");   // start time (number of steps from janurary 1)
+
+            C_csp_solver_sim_info sim_info;
+            sim_info.ms_ts.m_step = time_step;       // [s] Size of timestep
+
+            weather_reader.read_time_step(start_time_step, sim_info);
+            weather_reader.ms_outputs;
+
+            // HTF State
+            C_csp_solver_htf_1state htf_state;
+            htf_state.m_temp = T_htf_inlet;             // [C] Inlet Temp
+
+            double q_dot_elec_to_CR_heat = 0;   // [MWt]
+            double field_control = 1;           // [-] Defocus control (1 is no defocus)
+
+            C_csp_collector_receiver::S_csp_cr_out_solver cr_out_solver; // Output class
+
+            c_trough.off(weather_reader.ms_outputs, htf_state, cr_out_solver, sim_info);
+            c_trough.converged();
+        }
+
+        // STARTUP
+        if (mode == 3)
+        {
+            double time_step = as_double("time_step");          // [s]
+            double start_time_step = as_double("start_step");   // start time (number of steps from janurary 1)
+
+            C_csp_solver_sim_info sim_info;
+            sim_info.ms_ts.m_step = time_step;       // [s] Size of timestep
+
+            weather_reader.read_time_step(start_time_step, sim_info);
+            weather_reader.ms_outputs;
+
+            // HTF State
+            C_csp_solver_htf_1state htf_state;
+            htf_state.m_temp = T_htf_inlet;             // [C] Inlet Temp
+
+            double q_dot_elec_to_CR_heat = 0;   // [MWt]
+            double field_control = 1;           // [-] Defocus control (1 is no defocus)
+
+            C_csp_collector_receiver::S_csp_cr_out_solver cr_out_solver; // Output class
+
+            c_trough.startup(weather_reader.ms_outputs, htf_state, cr_out_solver, sim_info);
+            c_trough.converged();
+        }
+
+        // Allocate trough outputs
+        {
+            this->assign("Theta_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_THETA_AVE));
+            this->assign("CosTh_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_THETA_AVE));
+            this->assign("IAM_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_IAM_AVE));
+            this->assign("RowShadow_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_ROWSHADOW_AVE));
+            this->assign("EndLoss_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_ENDLOSS_AVE));
+            this->assign("dni_costh", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DNI_COSTH));
+            this->assign("EqOpteff", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_EQUIV_OPT_ETA_TOT));
+            this->assign("SCAs_def", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS));
+
+            this->assign("q_inc_sf_tot", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_INC_SF_TOT));
+            this->assign("qinc_costh", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_INC_SF_COSTH));
+            this->assign("q_dot_rec_inc", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_REC_INC));
+            this->assign("q_dot_rec_thermal_loss", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_REC_THERMAL_LOSS));
+            this->assign("q_dot_rec_abs", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_REC_ABS));
+            this->assign("q_dot_piping_loss", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_PIPING_LOSS));
+            this->assign("e_dot_field_int_energy", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_E_DOT_INTERNAL_ENERGY));
+            this->assign("q_dot_htf_sf_out", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_HTF_OUT));
+            this->assign("q_dot_freeze_prot", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_Q_DOT_FREEZE_PROT));
+
+            this->assign("m_dot_loop", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_M_DOT_LOOP));
+            this->assign("recirculating", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_IS_RECIRCULATING));
+            this->assign("m_dot_field_recirc", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_M_DOT_FIELD_RECIRC));
+            this->assign("m_dot_field_delivered", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_M_DOT_FIELD_DELIVERED));
+            this->assign("T_field_cold_in", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_T_FIELD_COLD_IN));
+            this->assign("T_rec_cold_in", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_T_REC_COLD_IN));
+            this->assign("T_rec_hot_out", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_T_REC_HOT_OUT));
+            this->assign("T_field_hot_out", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_T_FIELD_HOT_OUT));
+            this->assign("deltaP_field", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_PRESSURE_DROP));
+
+            this->assign("W_dot_sca_track", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_W_DOT_SCA_TRACK));
+            this->assign("W_dot_field_pump", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_W_DOT_PUMP));
+
+            std::vector<double> T_out_scas_last_final_K = c_trough.get_scas_outlet_temps();   // [K]
+            std::vector<double> T_out_scas_last_final_C;
+            for (double temp : T_out_scas_last_final_K)
+                T_out_scas_last_final_C.push_back(temp - 273.15);                             // [C]
+
+            ssc_number_t* p_T_out_scas_last_final = allocate("T_out_scas_last_final", T_out_scas_last_final_C.size());
+            std::copy(T_out_scas_last_final_C.begin(), T_out_scas_last_final_C.end(), p_T_out_scas_last_final);
+
         }
 
         // Output
