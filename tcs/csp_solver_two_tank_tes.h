@@ -110,6 +110,8 @@ public:
 
     double get_mass_avail();    //[kg]
 
+    double get_m_V_calc(); //[m3]
+
 	void init(HTFProperties htf_class_in, double V_tank /*m3*/, 
 		double h_tank /*m*/, double h_min /*m*/, double u_tank /*W/m2-K*/, 
 		double tank_pairs /*-*/, double T_htr /*K*/, double max_q_htr /*MWt*/, 
@@ -357,6 +359,10 @@ public:
     double get_storage_htf_cp();
 
     bool get_is_hx();
+
+    double get_hot_tank_vol();
+
+    double get_cold_tank_vol();
 
 };
 

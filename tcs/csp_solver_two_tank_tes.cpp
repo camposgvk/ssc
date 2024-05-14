@@ -441,6 +441,11 @@ double C_storage_tank::get_mass_avail()
     return std::max(m_m_prev - m_mass_inactive, 0.0);		//[kg]
 }
 
+double C_storage_tank::get_m_V_calc()
+{
+    return m_V_calc;    //[m3]
+}
+
 double C_storage_tank::m_dot_available(double f_unavail, double timestep)
 {
 	//double rho = mc_htf.dens(m_T_prev, 1.0);		//[kg/m^3]
@@ -1792,6 +1797,16 @@ double C_csp_two_tank_tes::get_storage_htf_cp()
 bool C_csp_two_tank_tes::get_is_hx()
 {
     return m_is_hx;
+}
+
+double C_csp_two_tank_tes::get_cold_tank_vol()
+{
+    return mc_cold_tank.get_m_V_calc();
+}
+
+double C_csp_two_tank_tes::get_hot_tank_vol()
+{
+    return mc_hot_tank.get_m_V_calc();
 }
 
 void two_tank_tes_sizing(HTFProperties &tes_htf_props, double Q_tes_des /*MWt-hr*/, double T_tes_hot /*K*/,

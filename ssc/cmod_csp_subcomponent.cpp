@@ -96,6 +96,12 @@ static var_info _cm_vtab_csp_subcomponent[] = {
     { SSC_OUTPUT,       SSC_ARRAY,       "T_tank_cold",               "Temperature of cold tank (average)",                                               "C",            "",               "TES",            "*",                       "",                      "" },
     { SSC_OUTPUT,       SSC_ARRAY,       "T_tank_hot",                "Temperature of hot tank (average)",                                                "C",            "",               "TES",            "*",                       "",                      "" },
     { SSC_OUTPUT,       SSC_ARRAY,       "hot_tank_vol_frac",         "Hot tank volume fraction of total",                                                "",             "",               "TES",            "*",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_ARRAY,       "mass_tes_cold",             "TES cold tank mass (end)",                                                         "kg",           "",               "TES",            "*",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_ARRAY,       "mass_tes_hot",              "TES hot tank mass (end)",                                                          "kg",           "",               "TES",            "*",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_ARRAY,       "V_tank_cold",               "TES cold tank volume (end)",                                                       "m3",           "",               "TES",            "*",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_ARRAY,       "V_tank_hot",                "TES hot tank volume (end)",                                                        "m3",           "",               "TES",            "*",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_ARRAY,       "hot_tank_mass_perc",        "TES hot tank mass percent of total (end)",                                         "kg",           "",               "TES",            "*",                       "",                      "" },
+
 
     var_info_invalid };
 
@@ -188,6 +194,11 @@ public:
         double* T_tank_cold = allocate("T_tank_cold", n_steps);
         double* T_tank_hot = allocate("T_tank_hot", n_steps);
         double* hot_tank_vol_frac = allocate("hot_tank_vol_frac", n_steps);
+        double* mass_tes_cold = allocate("mass_tes_cold", n_steps);
+        double* mass_tes_hot = allocate("mass_tes_hot", n_steps);
+        double* V_tank_cold = allocate("V_tank_cold", n_steps);
+        double* V_tank_hot = allocate("V_tank_hot", n_steps);
+        double* hot_tank_mass_perc = allocate("hot_tank_mass_perc", n_steps);
 
         // Simulate
         for (size_t i = 0; i < n_steps; i++) {
@@ -215,6 +226,11 @@ public:
             T_tank_cold[i] = K_to_C(tes.get_cold_temp());
             T_tank_hot[i] = K_to_C(tes.get_hot_temp());
             hot_tank_vol_frac[i] = tes.get_hot_tank_vol_frac();
+            mass_tes_cold[i] = tes.mc_reported_outputs.value(C_csp_two_tank_tes::E_MASS_COLD_TANK);
+            mass_tes_hot[i] = tes.mc_reported_outputs.value(C_csp_two_tank_tes::E_MASS_HOT_TANK);
+            V_tank_cold[i] = tes.get_cold_tank_vol();
+            V_tank_hot[i] = tes.get_hot_tank_vol();
+            hot_tank_mass_perc[i] = tes.mc_reported_outputs.value(C_csp_two_tank_tes::E_HOT_TANK_HTF_PERC_FINAL);
         }
     }
 };
