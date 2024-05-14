@@ -294,10 +294,11 @@ static var_info _cm_vtab_trough_field_subcomponent[] = {
     { SSC_OUTPUT,       SSC_ARRAY,       "pipe_loop_T_dsn",           "Field piping loop temperature at design",                                          "C",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
     { SSC_OUTPUT,       SSC_ARRAY,       "pipe_loop_P_dsn",           "Field piping loop pressure at design",                                             "bar",          "",               "solar_field",    "sim_type=1",                       "",                      "" },
 
-    { SSC_OUTPUT,       SSC_ARRAY,       "rec_op_mode_final",         "Final receiver operating mode (0,1,2,3:OFF,OFFNOSTARTUP,STARTUP,ON)",                          "-",            "",               "solar_field", "",                        "",                      "" },
+    { SSC_OUTPUT,       SSC_NUMBER,      "rec_op_mode_final",         "Final receiver operating mode (0,1,2,3:OFF,OFFNOSTARTUP,STARTUP,ON)",              "-",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
     { SSC_OUTPUT,       SSC_NUMBER,      "T_in_loop_final",           "Final loop inlet, cold header and cold runner fluid temperature",                  "C",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
     { SSC_OUTPUT,       SSC_NUMBER,      "T_out_loop_final",          "Final loop outlet, hot header and hot runner fluid temperature",                   "C",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
     { SSC_OUTPUT,       SSC_ARRAY,       "T_out_scas_last_final",     "Final SCA outlet temperatures",                                                    "C",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_NUMBER,      "time_required_su",          "Time required to startup (only used for startup mode)",                            "s",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
 
 
 
@@ -701,86 +702,44 @@ public:
         int field_mode = as_integer("field_mode");
         double T_htf_inlet = as_double("T_htf_in");    // [C]
 
+        // Define Time Step
+        double time_step = as_double("time_step");          // [s]
+        double start_time_step = as_double("start_step");   // start time (number of steps from janurary 1)
+
+        C_csp_solver_sim_info sim_info;
+        sim_info.ms_ts.m_step = time_step;       // [s] Size of timestep
+
+        // Read weather for time step
+        weather_reader.read_time_step(start_time_step, sim_info);
+        weather_reader.ms_outputs;
+
+        // HTF State
+        C_csp_solver_htf_1state htf_state;
+        htf_state.m_temp = T_htf_inlet;             // [C] Inlet Temp
+
+        C_csp_collector_receiver::S_csp_cr_out_solver cr_out_solver; // Output class
+
         // OFF
         if (field_mode == 0)
         {
-            double time_step = as_double("time_step");          // [s]
-            double start_time_step = as_double("start_step");   // start time (number of steps from janurary 1)
-
-            C_csp_solver_sim_info sim_info;
-            sim_info.ms_ts.m_step = time_step;       // [s] Size of timestep
-
-            weather_reader.read_time_step(start_time_step, sim_info);
-            weather_reader.ms_outputs;
-
-            // HTF State
-            C_csp_solver_htf_1state htf_state;
-            htf_state.m_temp = T_htf_inlet;             // [C] Inlet Temp
-
-            double q_dot_elec_to_CR_heat = 0;   // [MWt]
-            double field_control = 1;           // [-] Defocus control (1 is no defocus)
-
-            C_csp_collector_receiver::S_csp_cr_out_solver cr_out_solver; // Output class
-
             c_trough.off(weather_reader.ms_outputs, htf_state, cr_out_solver, sim_info);
             c_trough.converged();
-
-            int x = 0;
         }
         // STARTUP
         if (field_mode == 2)
         {
-            double time_step = as_double("time_step");          // [s]
-            double start_time_step = as_double("start_step");   // start time (number of steps from janurary 1)
-
-            C_csp_solver_sim_info sim_info;
-            sim_info.ms_ts.m_step = time_step;       // [s] Size of timestep
-
-            weather_reader.read_time_step(start_time_step, sim_info);
-            weather_reader.ms_outputs;
-
-            // HTF State
-            C_csp_solver_htf_1state htf_state;
-            htf_state.m_temp = T_htf_inlet;             // [C] Inlet Temp
-
-            double q_dot_elec_to_CR_heat = 0;   // [MWt]
-            double field_control = 1;           // [-] Defocus control (1 is no defocus)
-
-            C_csp_collector_receiver::S_csp_cr_out_solver cr_out_solver; // Output class
-
             c_trough.startup(weather_reader.ms_outputs, htf_state, cr_out_solver, sim_info);
             c_trough.converged();
-
-            double time_startup = cr_out_solver.m_time_required_su; //[s]
-            
-            int x = 0;
         }
         // ON
         if (field_mode == 3)
         {
-            double time_step = as_double("time_step");          // [s]
-            double start_time_step = as_double("start_step");   // start time (number of steps from janurary 1)
-
-            C_csp_solver_sim_info sim_info;
-            sim_info.ms_ts.m_step = time_step;       // [s] Size of timestep
-
-            weather_reader.read_time_step(start_time_step, sim_info);
-            weather_reader.ms_outputs;
-
-            // HTF State
-            C_csp_solver_htf_1state htf_state;
-            htf_state.m_temp = T_htf_inlet;             // [C] Inlet Temp
-
             double q_dot_elec_to_CR_heat = 0;   // [MWt]
             double field_control = 1;           // [-] Defocus control (1 is no defocus)
 
-            C_csp_collector_receiver::S_csp_cr_out_solver cr_out_solver; // Output class
-
             c_trough.on(weather_reader.ms_outputs, htf_state, q_dot_elec_to_CR_heat, field_control,
                 cr_out_solver, sim_info);
-            c_trough.converged();
-
-            
+            c_trough.converged();  
         }
         
 
@@ -830,7 +789,7 @@ public:
             ssc_number_t* p_T_out_scas_last_final = allocate("T_out_scas_last_final", T_out_scas_last_final_C.size());
             std::copy(T_out_scas_last_final_C.begin(), T_out_scas_last_final_C.end(), p_T_out_scas_last_final);
 
-            
+            this->assign("time_required_su", cr_out_solver.m_time_required_su); //[s]
 
         }
 
