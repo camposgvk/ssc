@@ -58,17 +58,19 @@ static var_info _cm_vtab_trough_field_subcomponent[] = {
 
     /* VARTYPE          DATATYPE         NAME                         LABEL                                                                               UNITS           META              GROUP             REQUIRED_IF                CONSTRAINTS         UI_HINTS*/
 
-    { SSC_INPUT,        SSC_NUMBER,      "sim_type",                  "1 (default): timeseries, 2: design only",                                          "",             "",               "System Control", "?=1",                    "",                       "SIMULATION_PARAMETER"},
+    { SSC_INPUT,        SSC_NUMBER,      "sim_type",                  "1 (default): timeseries, 2: design only",                                          "",             "",               "System Control", "?=1",                    "",                       ""},
 
     // Case Parameters
     { SSC_INPUT,        SSC_NUMBER,      "time_step",                 "Length of time step",                                                              "s",            "",               "",               "*",                      "",                       ""},
     { SSC_INPUT,        SSC_NUMBER,      "start_step",                "Number of time steps (from beginning of year) to start",                           "-",            "",               "",               "*",                      "",                       ""},
     { SSC_INPUT,        SSC_NUMBER,      "T_htf_in",                  "Temperature of HTF into field",                                                    "C",            "",               "",               "*",                      "",                       ""},
-    { SSC_INPUT,        SSC_NUMBER,      "field_mode",                "Field operation mode (0,1,2,3:OFF,OFFNOSTARTUP,STARTUP,ON)",                                      "",             "",               "",               "sim_type=1",             "",                       "SIMULATION_PARAMETER"},
+    { SSC_INPUT,        SSC_NUMBER,      "field_mode",                "Field operation mode (0,1,2,3:OFF,OFFNOSTARTUP,STARTUP,ON)",                       "",             "",               "",               "*",                      "",                       ""},
+    { SSC_INPUT,        SSC_NUMBER,      "defocus_field_control",     "Field defocus control (0-1)",                                                      "-",            "",               "",               "field_mode=3",           "",                       "" },
+
 
     // Weather Reader
     { SSC_INPUT,        SSC_STRING,      "file_name",                 "Local weather file with path",                                                     "none",         "",               "weather",        "?",                       "LOCAL_FILE",            "" },
-    { SSC_INPUT,        SSC_TABLE,       "solar_resource_data",       "Weather resource data in memory",                                                  "",             "",               "weather",        "?",                       "",                      "SIMULATION_PARAMETER" },
+    { SSC_INPUT,        SSC_TABLE,       "solar_resource_data",       "Weather resource data in memory",                                                  "",             "",               "weather",        "?",                       "",                      "" },
     //{ SSC_INPUT,        SSC_NUMBER,      "track_mode",                "Tracking mode",                                                                    "none",         "",               "weather",        "*",                       "",                      "" },
 
     // Solar Field, Trough
@@ -295,6 +297,7 @@ static var_info _cm_vtab_trough_field_subcomponent[] = {
     { SSC_OUTPUT,       SSC_ARRAY,       "pipe_loop_P_dsn",           "Field piping loop pressure at design",                                             "bar",          "",               "solar_field",    "sim_type=1",                       "",                      "" },
 
     { SSC_OUTPUT,       SSC_NUMBER,      "rec_op_mode_final",         "Final receiver operating mode (0,1,2,3:OFF,OFFNOSTARTUP,STARTUP,ON)",              "-",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_NUMBER,      "defocus_final",             "Defocus final",                                                                    "-",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
     { SSC_OUTPUT,       SSC_NUMBER,      "T_in_loop_final",           "Final loop inlet, cold header and cold runner fluid temperature",                  "C",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
     { SSC_OUTPUT,       SSC_NUMBER,      "T_out_loop_final",          "Final loop outlet, hot header and hot runner fluid temperature",                   "C",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
     { SSC_OUTPUT,       SSC_ARRAY,       "T_out_scas_last_final",     "Final SCA outlet temperatures",                                                    "C",            "",               "solar_field",    "sim_type=1",                       "",                      "" },
@@ -735,7 +738,7 @@ public:
         if (field_mode == 3)
         {
             double q_dot_elec_to_CR_heat = 0;   // [MWt]
-            double field_control = 1;           // [-] Defocus control (1 is no defocus)
+            double field_control = as_double("defocus_field_control");           // [-] Defocus control (1 is no defocus)
 
             c_trough.on(weather_reader.ms_outputs, htf_state, q_dot_elec_to_CR_heat, field_control,
                 cr_out_solver, sim_info);
@@ -791,6 +794,10 @@ public:
 
             this->assign("time_required_su", cr_out_solver.m_time_required_su); //[s]
 
+            double defocus_final = c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS_FINAL);
+            double defocus = c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS);
+
+            double x = 0;
         }
 
         // Output
