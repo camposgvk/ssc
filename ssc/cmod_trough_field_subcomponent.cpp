@@ -793,11 +793,11 @@ public:
             std::copy(T_out_scas_last_final_C.begin(), T_out_scas_last_final_C.end(), p_T_out_scas_last_final);
 
             this->assign("time_required_su", cr_out_solver.m_time_required_su); //[s]
+            this->assign("defocus_final", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS));
 
-            double defocus_final = c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS_FINAL);
-            double defocus = c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS);
+            //double defocus_final = c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS_FINAL);
+            //double defocus = c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_DEFOCUS);
 
-            double x = 0;
         }
 
         // Output
