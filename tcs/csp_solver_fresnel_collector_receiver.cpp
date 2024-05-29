@@ -32,6 +32,10 @@ static C_csp_reported_outputs::S_output_info S_output_info[] =
     {C_csp_fresnel_collector_receiver::E_W_DOT_SCA_TRACK, C_csp_reported_outputs::TS_WEIGHTED_AVE},
     {C_csp_fresnel_collector_receiver::E_W_DOT_PUMP, C_csp_reported_outputs::TS_WEIGHTED_AVE},
 
+    {C_csp_fresnel_collector_receiver::E_REC_OP_MODE_FINAL, C_csp_reported_outputs::TS_LAST},
+    {C_csp_fresnel_collector_receiver::E_T_IN_LOOP_FINAL, C_csp_reported_outputs::TS_LAST},
+    {C_csp_fresnel_collector_receiver::E_T_OUT_LOOP_FINAL, C_csp_reported_outputs::TS_LAST},
+
     csp_info_invalid
 };
 
@@ -359,7 +363,7 @@ C_csp_fresnel_collector_receiver::E_loop_energy_balance_exit C_csp_fresnel_colle
 
     // BULK Temperature calculations
     {
-        // This value is the Bulk Temperature at the *end* of the timestep (type 262 line 1551; trough line 1187)
+        // This value is the Bulk Temperature at the *end* of the timestep (type 262 line 1551; fresnel line 1187)
         m_T_sys_c_t_end = (m_T_sys_c_t_end_last - T_htf_cold_in) * exp(-(m_dot_htf_loop * float(m_nLoops))
             / (m_v_cold * rho_hdr_cold + m_mc_bal_cold / c_hdr_cold_last) * dt) + T_htf_cold_in;
 
@@ -414,7 +418,7 @@ C_csp_fresnel_collector_receiver::E_loop_energy_balance_exit C_csp_fresnel_colle
     E_HR_cold_bal = -E_HR_cold_losses - E_HR_cold_htf - E_HR_cold;		//[MJ]
 
     // Calculate Loop Inlet temperature (follows original fresnel calculation)
-    double trough_m_T_loop_in = m_T_hdr[m_nhdrsec - 1] - m_Header_hl_cold / (m_dot_header(m_m_dot_htf_tot, m_nfsec, m_nLoops, m_nhdrsec - 1) * m_cp_sys_c_t_int); // trough calculation
+    double fresnel_m_T_loop_in = m_T_hdr[m_nhdrsec - 1] - m_Header_hl_cold / (m_dot_header(m_m_dot_htf_tot, m_nfsec, m_nLoops, m_nhdrsec - 1) * m_cp_sys_c_t_int); // fresnel calculation
     m_T_loop_in = m_T_sys_c_t_end - Pipe_hl_cold / (m_dot_htf_loop * m_nLoops * m_cp_sys_c_t_int); // original fresnel calculation
     m_T_loop[0] = m_T_loop_in;
     m_T_htf_in_t_int[0] = m_T_loop_in;
@@ -518,7 +522,7 @@ C_csp_fresnel_collector_receiver::E_loop_energy_balance_exit C_csp_fresnel_colle
 
                 // 7.8.2016 twn: reformulate the energy balance calculations similar to the runner/headers:
                 //                    the outlet HTF temperature is equal to the bulk temperature
-                // THis is from physical trough (line 1330) NOT type 262 (line 1620)
+                // THis is from physical fresnel (line 1330) NOT type 262 (line 1620)
                 m_T_htf_out_t_end[i] = m_q_abs_SCAtot[i] / (m_dot_htf_loop * c_htf_i) + m_T_htf_in_t_int[i] +
                     (m_T_htf_out_t_end_last[i] - m_T_htf_in_t_int[i] - m_q_abs_SCAtot[i] / (m_dot_htf_loop * c_htf_i)) *
                     exp(-m_dot_htf_loop * c_htf_i * sim_info.ms_ts.m_step / (m_node * c_htf_i + m_mc_bal_sca * m_L_mod));
@@ -553,7 +557,7 @@ C_csp_fresnel_collector_receiver::E_loop_energy_balance_exit C_csp_fresnel_colle
                     m_node = m_rec_htf_vol / 1000. * m_A_aperture * rho_htf_i;	// [L/m2-ap]*[1 m3/1000 L]*[m2-ap]*[kg/m3] --> kg
                     // 7.8.2016 twn: reformulate the energy balance calculations similar to the runner/headers:
                     //                    the outlet HTF temperature is equal to the bulk temperature
-                    // THis is from physical trough (line 1330) NOT type 262 (line 1620)
+                    // THis is from physical fresnel (line 1330) NOT type 262 (line 1620)
 
                     m_T_htf_out_t_end[i] = m_q_abs_SCAtot[i] / (m_dot_htf_loop * c_htf_i) + m_T_htf_in_t_int[i] +
                         (m_T_htf_out_t_end_last[i] - m_T_htf_in_t_int[i] - m_q_abs_SCAtot[i] / (m_dot_htf_loop * c_htf_i)) *
@@ -1682,7 +1686,7 @@ void C_csp_fresnel_collector_receiver::init(const C_csp_collector_receiver::S_cs
         m_q_reflect.resize(m_nRecVar);
         m_ColOptEff.resize(m_nMod);
 
-        // Trough
+        // fresnel
         m_q_SCA_control_df.resize(m_nMod);
     }
     
@@ -1861,6 +1865,15 @@ void C_csp_fresnel_collector_receiver::init(const C_csp_collector_receiver::S_cs
         }
 
         
+    }
+
+    // Set previous operating mode
+    m_operating_mode = m_operating_mode_initial;
+    m_operating_mode_converged = m_operating_mode_initial;
+
+    // Set initial state if configured
+    if (isfinite(m_T_in_loop_initial) && isfinite(m_T_out_loop_initial) && !m_T_out_scas_last_initial.empty()) {
+        set_state(m_T_in_loop_initial, m_T_out_loop_initial, m_T_out_scas_last_initial);
     }
 
     return;
@@ -2263,6 +2276,11 @@ double C_csp_fresnel_collector_receiver::get_max_power_delivery(double T_cold_in
 double C_csp_fresnel_collector_receiver::get_tracking_power()
 {
     return m_SCA_drives_elec * 1.e-6 * m_nMod * m_nLoops;     //MWe
+}
+
+std::vector<double> C_csp_fresnel_collector_receiver::get_scas_outlet_temps()
+{
+    return m_T_htf_out_t_end_converged;
 }
 
 double C_csp_fresnel_collector_receiver::get_col_startup_power()
@@ -2947,6 +2965,26 @@ void C_csp_fresnel_collector_receiver::estimates(const C_csp_weatherreader::S_ou
     return;
 }
 
+void C_csp_fresnel_collector_receiver::set_state(double T_in_loop, double T_out_loop, std::vector<double> T_out_scas)
+{
+    std::size_t N_scas_fresnel = m_T_htf_out_t_end_converged.size();
+    std::size_t N_scas_state = T_out_scas.size();
+    if (N_scas_fresnel != N_scas_state) {
+        throw "Incorrect fresnel state array length.";
+    }
+
+    // Set converged values so reset_last_temps() propagates the temps in time
+    m_T_sys_c_t_end_converged = m_T_sys_c_t_end_last = T_in_loop;       // this ends up setting m_T_sys_c_t_end_last
+    m_T_sys_h_t_end_converged = m_T_sys_h_t_end_last = T_out_loop;      // this ends up setting m_T_sys_h_t_end_last
+
+    // SCA temperatures - these end up setting m_T_htf_out_t_end_last[i]
+    for (std::vector<int>::size_type i = 0; i != T_out_scas.size(); i++) {
+        m_T_htf_out_t_end_converged[i] = T_out_scas[i];
+        m_T_htf_out_t_end[i] = T_out_scas[i];
+        m_T_htf_out_t_int[i] = T_out_scas[i];
+    }
+}
+
 void C_csp_fresnel_collector_receiver::converged()
 {
     /*
@@ -2986,6 +3024,12 @@ void C_csp_fresnel_collector_receiver::converged()
 
     // Reset the optical efficiency member data
     loop_optical_eta_off();
+
+    // Set reported converged values
+    mc_reported_outputs.value(E_REC_OP_MODE_FINAL, m_operating_mode_converged);
+    mc_reported_outputs.value(E_T_IN_LOOP_FINAL, m_T_sys_c_t_end_converged);
+    mc_reported_outputs.value(E_T_OUT_LOOP_FINAL, m_T_sys_h_t_end_converged);
+    // NOTE: m_T_htf_out_t_end_converged is returned in the compute module;
 
     mc_reported_outputs.set_timestep_outputs();
 

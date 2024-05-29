@@ -39,10 +39,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "csp_solver_core.h"
 #include "csp_solver_trough_collector_receiver.h"
-#include "csp_solver_pc_heat_sink.h"
-#include "csp_solver_two_tank_tes.h"
-#include "csp_solver_tou_block_schedules.h"
-#include "csp_dispatch.h"
 #include "csp_system_costs.h"
 #include <ctime>
 #include <algorithm>
@@ -749,7 +745,7 @@ public:
         // Allocate trough outputs
         {
             this->assign("Theta_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_THETA_AVE));
-            this->assign("CosTh_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_THETA_AVE));
+            this->assign("CosTh_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_COSTH_AVE));
             this->assign("IAM_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_IAM_AVE));
             this->assign("RowShadow_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_ROWSHADOW_AVE));
             this->assign("EndLoss_ave", c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_ENDLOSS_AVE));

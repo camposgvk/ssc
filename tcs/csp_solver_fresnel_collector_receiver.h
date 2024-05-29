@@ -145,6 +145,9 @@ public:
         E_W_DOT_SCA_TRACK,	//[MWe]
         E_W_DOT_PUMP,		//[MWe]
 
+        E_REC_OP_MODE_FINAL,        //[-] Final receiver operating mode
+        E_T_IN_LOOP_FINAL,          //[C]
+        E_T_OUT_LOOP_FINAL          //[C]
     };
 
     enum struct E_loop_energy_balance_exit
@@ -371,6 +374,13 @@ private:
     // Public Fields
 public:
 
+    // Initial state
+    C_csp_collector_receiver::E_csp_cr_modes m_operating_mode_initial;
+    double m_defocus_initial;
+    double m_T_in_loop_initial;
+    double m_T_out_loop_initial;
+    std::vector<double> m_T_out_scas_last_initial;
+
     // INPUTS
 
     int m_solar_mult_or_Ap;                         // Design using specified solar mult or field aperture
@@ -581,6 +591,8 @@ public:
 
     virtual double get_col_startup_power();		//MWe-hr
 
+    virtual std::vector<double> get_scas_outlet_temps(); //C
+
     virtual C_csp_collector_receiver::E_csp_cr_modes get_operating_state();
 
     virtual void get_design_parameters(C_csp_collector_receiver::S_csp_cr_solved_params& solved_params);
@@ -612,6 +624,8 @@ public:
         const C_csp_solver_htf_1state& htf_state_in,
         C_csp_collector_receiver::S_csp_cr_est_out& est_out,
         const C_csp_solver_sim_info& sim_info);
+
+    void set_state(double T_in_loop, double T_out_loop, std::vector<double> T_out_scas);
 
     virtual void converged();
 
