@@ -1515,6 +1515,11 @@ C_csp_fresnel_collector_receiver::C_csp_fresnel_collector_receiver()
 
     mv_HCEguessargs.resize(3);
     std::fill(mv_HCEguessargs.begin(), mv_HCEguessargs.end(), std::numeric_limits<double>::quiet_NaN());
+
+    m_operating_mode_initial = C_csp_collector_receiver::OFF;
+    m_defocus_initial = std::numeric_limits<double>::quiet_NaN();
+    m_T_in_loop_initial = std::numeric_limits<double>::quiet_NaN();
+    m_T_out_loop_initial = std::numeric_limits<double>::quiet_NaN();
 }
 
 C_csp_fresnel_collector_receiver::~C_csp_fresnel_collector_receiver()
