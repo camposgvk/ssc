@@ -613,13 +613,13 @@ public:
             c_fresnel.converged();
         }
         // STARTUP
-        if (field_mode == 2)
+        else if (field_mode == 2)
         {
             c_fresnel.startup(weather_reader.ms_outputs, htf_state, cr_out_solver, sim_info);
             c_fresnel.converged();
         }
         // ON
-        if (field_mode == 3)
+        else if (field_mode == 3)
         {
             double q_dot_elec_to_CR_heat = 0;   // [MWt]
             double field_control = as_double("defocus_field_control");           // [-] Defocus control (1 is no defocus)
@@ -627,6 +627,10 @@ public:
             c_fresnel.on(weather_reader.ms_outputs, htf_state, q_dot_elec_to_CR_heat, field_control,
                 cr_out_solver, sim_info);
             c_fresnel.converged();  
+        }
+        else
+        {
+            throw exec_error("fresnel_physical", "Unknown field mode");
         }
         
 
