@@ -70,6 +70,8 @@ static var_info _cm_vtab_flat_plate_subcomponent[] = {
     { SSC_INPUT,        SSC_NUMBER,      "flat_plates_in_series",     "Number of flat plate collectors in series",                                        "",             "",               "trough_field",   "*",                       "",                      "" },
     { SSC_INPUT,        SSC_NUMBER,      "flat_plates_in_parallel",   "Number of flat plate collectors in parallel",                                      "",             "",               "trough_field",   "*",                       "",                      "" },
     { SSC_INPUT,        SSC_NUMBER,      "Fluid_FPC",                 "Flat plate array HTF fluid ID number",                                             "none",         "",               "solar_field",    "*",                       "",                      "" },
+    { SSC_INPUT,        SSC_MATRIX,      "fl_props_FPC",              "User defined field fluid property data",                                           "-",            "",               "solar_field",    "*",                       "",                      "" },
+
 
     // Piping Parameters
     { SSC_INPUT,        SSC_NUMBER,      "pipe_diam",                 "Pipe diameter",                                                                    "m",            "",               "solar_field",    "*",                       "",                      "" },
@@ -148,6 +150,45 @@ public:
             sim_setup.m_report_step = 3600.0 / (double)steps_per_hour;  //[s]
         }
 
+        // Parse HTF Properties
+        HTFProperties htf_props;
+        {
+            int fluid_id = as_integer("Fluid_FPC");
+            util::matrix_t<double> fl_props = as_matrix("fl_props_FPC");
+            string error_msg;
+
+            if (fluid_id != HTFProperties::User_defined)
+            {
+                if (!htf_props.SetFluid(fluid_id))
+                {
+                    throw(C_csp_exception("Field HTF code is not recognized", "Trough Collector Solver"));
+                }
+            }
+            else if (fluid_id == HTFProperties::User_defined)
+            {
+                int n_rows = (int)fl_props.nrows();
+                int n_cols = (int)fl_props.ncols();
+                if (n_rows > 2 && n_cols == 7)
+                {
+                    if (!htf_props.SetUserDefinedFluid(fl_props))
+                    {
+                        
+                        error_msg = util::format(htf_props.UserFluidErrMessage(), n_rows, n_cols);
+                        throw(C_csp_exception(error_msg, "Flat Plate Collector Solver"));
+                    }
+                }
+                else
+                {
+                    error_msg = util::format("The user defined field HTF table must contain at least 3 rows and exactly 7 columns. The current table contains %d row(s) and %d column(s)", n_rows, n_cols);
+                    throw(C_csp_exception(error_msg, "Flat Plate Collector Solver"));
+                }
+            }
+            else
+            {
+                throw(C_csp_exception("HTF code is not recognized", "Flat Plate Solver"));
+            }
+        }
+
         // Initialize flat plate collectors
         CollectorTestSpecifications collector_test_specifications;
         collector_test_specifications.FRta = as_double("flat_plate_tested_frta");
@@ -170,24 +211,12 @@ public:
         array_dimensions.num_in_series = as_integer("flat_plates_in_series");
         array_dimensions.num_in_parallel = as_integer("flat_plates_in_parallel");
 
-        //Pipe inlet_pipe(0.019, 0.03, 0.006, 5);		// Need to add user inputs for this
         Pipe inlet_pipe(as_double("pipe_diam"), as_double("pipe_k"), as_double("pipe_insul"), as_double("pipe_length") / 2.0);
         Pipe outlet_pipe(inlet_pipe);
 
         FlatPlateArray flat_plate_array_ = FlatPlateArray(collector_test_specifications, collector_location,
             collector_orientation, array_dimensions,
             inlet_pipe, outlet_pipe);
-
-        // Size flat plate array
-        //flat_plate_array_.SetFluid(as_integer("m_Fluid_FPC"));    <-- don't need to set this, I believe
-
-        // This seems to be for auto sizing, not included here (dimensions need to be > 0)
-        //if (array_dimensions.num_in_series < 1) {
-        //    flat_plate_array_.resize_num_in_series(m_T_loop_in_des - 273.15, m_T_PTC_in_des - m_T_loop_in_des, T_approach_hx_);
-        //}
-        //if (array_dimensions.num_in_parallel < 1) {
-        //    flat_plate_array_.resize_num_in_parallel(m_T_loop_in_des - 273.15, m_T_PTC_in_des - m_T_loop_in_des, m_m_dot_design, m_htfProps);
-        //}
 
         // Define Time Step
         double time_step = 3600;          // [s]
@@ -218,7 +247,7 @@ public:
 
         case_conditions.inlet_fluid_flow.m_dot = as_double("m_dot");    // [kg/s]
         case_conditions.inlet_fluid_flow.temp = as_double("T_in");      // [C]
-        case_conditions.inlet_fluid_flow.fluid.SetFluid(as_integer("Fluid_FPC"));
+        case_conditions.inlet_fluid_flow.fluid = htf_props;
         case_conditions.albedo = as_double("flat_plate_albedo");        // []
 
         case_conditions.inlet_fluid_flow.specific_heat = case_conditions.inlet_fluid_flow.fluid.Cp(case_conditions.inlet_fluid_flow.temp+273.15);
