@@ -71,6 +71,13 @@ static var_info _cm_vtab_flat_plate_subcomponent[] = {
     { SSC_INPUT,        SSC_NUMBER,      "flat_plates_in_parallel",   "Number of flat plate collectors in parallel",                                      "",             "",               "trough_field",   "*",                       "",                      "" },
     { SSC_INPUT,        SSC_NUMBER,      "Fluid_FPC",                 "Flat plate array HTF fluid ID number",                                             "none",         "",               "solar_field",    "*",                       "",                      "" },
 
+    // Piping Parameters
+    { SSC_INPUT,        SSC_NUMBER,      "pipe_diam",                 "Pipe diameter",                                                                    "m",            "",               "solar_field",    "*",                       "",                      "" },
+    { SSC_INPUT,        SSC_NUMBER,      "pipe_k",                    "Pipe insulation thermal conductivity",                                             "W/m2 K",       "",               "solar_field",    "*",                       "",                      "" },
+    { SSC_INPUT,        SSC_NUMBER,      "pipe_insul",                "Pipe insulation thickness",                                                        "m",            "",               "solar_field",    "*",                       "",                      "" },
+    { SSC_INPUT,        SSC_NUMBER,      "pipe_length",               "Piping total length",                                                              "m",            "",               "solar_field",    "*",                       "",                      "" },
+
+
 
     // Outputs
     { SSC_OUTPUT,       SSC_NUMBER,      "T_out",                     "Temperature leaving solar collector array (and piping)",                           "C",            "",               "solar_field",    "*",                       "",                      "" },
@@ -164,7 +171,7 @@ public:
         array_dimensions.num_in_parallel = as_integer("flat_plates_in_parallel");
 
         //Pipe inlet_pipe(0.019, 0.03, 0.006, 5);		// Need to add user inputs for this
-        Pipe inlet_pipe(0, 0.03, 0.006, 5);
+        Pipe inlet_pipe(as_double("pipe_diam"), as_double("pipe_k"), as_double("pipe_insul"), as_double("pipe_length") / 2.0);
         Pipe outlet_pipe(inlet_pipe);
 
         FlatPlateArray flat_plate_array_ = FlatPlateArray(collector_test_specifications, collector_location,
