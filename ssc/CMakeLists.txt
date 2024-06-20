@@ -37,6 +37,7 @@ set(SSC_SRC
 		cmod_equpartflip.cpp
 		cmod_financial_eqns.cpp
 		cmod_financial_eqns.h
+        cmod_flat_plate_subcomponent.cpp
 		cmod_fossilgen.cpp
         cmod_fresnel_field_subcomponent.cpp
         cmod_fresnel_physical.cpp
