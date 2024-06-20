@@ -85,6 +85,7 @@ static var_info _cm_vtab_flat_plate_subcomponent[] = {
     { SSC_OUTPUT,       SSC_NUMBER,      "T_out",                     "Temperature leaving solar collector array (and piping)",                           "C",            "",               "solar_field",    "*",                       "",                      "" },
     { SSC_OUTPUT,       SSC_NUMBER,      "Q_gain",                    "Heat gained in solar collector array",                                             "MWt",          "",               "solar_field",    "*",                       "",                      "" },
     { SSC_OUTPUT,       SSC_NUMBER,      "Q_loss",                    "Heat lost in solar collector array (and piping)",                                  "MWt",          "",               "solar_field",    "*",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_NUMBER,      "T_amb",                     "Ambient temperature",                                                              "C",            "",               "solar_field",    "*",                       "",                      "" },
 
 
 
@@ -259,6 +260,7 @@ public:
         assign("T_out", sim_results.T_out);             // [C]
         assign("Q_gain", sim_results.Q_gain / 1.E3);    // [MWt]
         assign("Q_loss", sim_results.Q_loss / 1.E3);    // [MWt]
+        assign("T_amb", weather.m_tdry);                // [C]
 
         int x = 0;
     }
