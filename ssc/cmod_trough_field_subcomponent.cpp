@@ -54,14 +54,15 @@ static var_info _cm_vtab_trough_field_subcomponent[] = {
 
     /* VARTYPE          DATATYPE         NAME                         LABEL                                                                               UNITS           META              GROUP             REQUIRED_IF                CONSTRAINTS         UI_HINTS*/
 
-    { SSC_INPUT,        SSC_NUMBER,      "sim_type",                  "1 (default): timeseries, 2: design only",                                          "",             "",               "System Control", "?=1",                    "",                       ""},
+    { SSC_INPUT,        SSC_NUMBER,      "sim_type",                  "1 (default): timeseries, 2: design only",                                          "",             "",               "System Control", "?=1",                    "",                       "" },
 
     // Case Parameters
-    { SSC_INPUT,        SSC_NUMBER,      "time_step",                 "Length of time step",                                                              "s",            "",               "",               "*",                      "",                       ""},
-    { SSC_INPUT,        SSC_NUMBER,      "start_step",                "Number of time steps (from beginning of year) to start",                           "-",            "",               "",               "*",                      "",                       ""},
-    { SSC_INPUT,        SSC_NUMBER,      "T_htf_in",                  "Temperature of HTF into field",                                                    "C",            "",               "",               "*",                      "",                       ""},
-    { SSC_INPUT,        SSC_NUMBER,      "field_mode",                "Field operation mode (0,1,2,3:OFF,OFFNOSTARTUP,STARTUP,ON)",                       "",             "",               "",               "*",                      "",                       ""},
+    { SSC_INPUT,        SSC_NUMBER,      "time_step",                 "Length of time step",                                                              "s",            "",               "",               "*",                      "",                       "" },
+    { SSC_INPUT,        SSC_NUMBER,      "start_step",                "Number of time steps (from beginning of year) to start",                           "-",            "",               "",               "*",                      "",                       "" },
+    { SSC_INPUT,        SSC_NUMBER,      "T_htf_in",                  "Temperature of HTF into field",                                                    "C",            "",               "",               "*",                      "",                       "" },
+    { SSC_INPUT,        SSC_NUMBER,      "field_mode",                "Field operation mode (0,1,2,3:OFF,OFFNOSTARTUP,STARTUP,ON)",                       "",             "",               "",               "*",                      "",                       "" },
     { SSC_INPUT,        SSC_NUMBER,      "defocus_field_control",     "Field defocus control (0-1)",                                                      "-",            "",               "",               "field_mode=3",           "",                       "" },
+    { SSC_INPUT,        SSC_NUMBER,      "m_dot_fixed",               "Optional fixed mass flow rate",                                                    "kg/s",         "",               "",               "?=0",                    "",                       "" },
 
 
     // Weather Reader
@@ -717,6 +718,14 @@ public:
         htf_state.m_temp = T_htf_inlet;             // [C] Inlet Temp
 
         C_csp_collector_receiver::S_csp_cr_out_solver cr_out_solver; // Output class
+
+        // Constrain Mass Flow Rate
+        double m_dot_fixed = as_double("m_dot_fixed");  // [kg/s]
+        if (m_dot_fixed > 0)
+        {
+            c_trough.m_m_dot_htfmin = m_dot_fixed;
+            c_trough.m_m_dot_htfmax = m_dot_fixed;
+        }
 
         // OFF
         if (field_mode == 0)
