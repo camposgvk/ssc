@@ -732,6 +732,10 @@ public:
         {
             c_trough.off(weather_reader.ms_outputs, htf_state, cr_out_solver, sim_info);
             c_trough.converged();
+            
+            // Set next operating mode to startup if DNI > 1
+            if (weather_reader.ms_outputs.m_beam > 1.0)
+                c_trough.mc_reported_outputs.value(C_csp_trough_collector_receiver::E_REC_OP_MODE_FINAL, 2);
         }
         // STARTUP
         else if (field_mode == 2)
