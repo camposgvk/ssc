@@ -54,7 +54,9 @@ static var_info _cm_vtab_flat_plate_subcomponent[] = {
     { SSC_INPUT,        SSC_NUMBER,      "start_step",                "Hour of year",                                                                     "-",            "",               "",               "*",                       "",                      "" },
     { SSC_INPUT,        SSC_NUMBER,      "m_dot",                     "Fluid mass flow rate into flat plate collector",                                   "kg/s",         "",               "",               "*",                       "",                      "" },
     { SSC_INPUT,        SSC_NUMBER,      "T_in",                      "Fluid temperature into flat plate collector",                                      "C",            "",               "",               "*",                       "",                      "" },                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                         
+    { SSC_INPUT,        SSC_NUMBER,      "T_out_spec",                "Fluid temperature into flat plate collector",                                      "C",            "",               "",               "",                        "",                      "" },
+
+
     // Flat Plate Collectors                                                                                                                                                                                                             
     { SSC_INPUT,        SSC_NUMBER,      "flat_plate_tested_frta",    "FRta from certification testing",                                                  "none",         "",               "solar_field",    "?=0.733",                 "",                      "" },
     { SSC_INPUT,        SSC_NUMBER,      "flat_plate_tested_frul",    "FRUL from certification testing",                                                  "W/m2-K",       "",               "solar_field",    "?=3.41",                  "",                      "" },
@@ -88,6 +90,7 @@ static var_info _cm_vtab_flat_plate_subcomponent[] = {
     { SSC_OUTPUT,       SSC_NUMBER,      "Q_loss",                    "Heat lost in solar collector array (and piping)",                                  "MWt",          "",               "solar_field",    "*",                       "",                      "" },
     { SSC_OUTPUT,       SSC_NUMBER,      "T_amb",                     "Ambient temperature",                                                              "C",            "",               "solar_field",    "*",                       "",                      "" },
     { SSC_OUTPUT,       SSC_NUMBER,      "W_dot_pump",                "HTF pumping power",                                                                "MWe",          "",               "solar_field",    "*",                       "",                      "" },
+    { SSC_OUTPUT,       SSC_NUMBER,      "m_dot_calc",                "Solve mass flow rate",                                                             "kg/s",         "",               "solar_field",    "*",                       "",                      "" },
 
 
 
@@ -255,11 +258,26 @@ public:
 
         case_conditions.inlet_fluid_flow.specific_heat = case_conditions.inlet_fluid_flow.fluid.Cp(case_conditions.inlet_fluid_flow.temp+273.15);
 
-        // Simulate
-        HeatAndTempInOut sim_results = flat_plate_array_.HeatFlowsAndOutletTemp(datetime, case_conditions);
+        // Declare Output
+        HeatAndTempInOut sim_results;
+
+        // Solve for mass flow rate
+        if (is_assigned("T_out_spec") == true && as_double("T_out_spec") > 0)
+        {
+            double m_dot_solved;
+            sim_results = flat_plate_array_.TargetTempOut(datetime, case_conditions, as_double("T_out_spec"), m_dot_solved);
+            assign("m_dot_calc", m_dot_solved); // [kg/s]
+        }
+
+        // Fixed mass flow rate
+        else
+        {
+            sim_results = flat_plate_array_.HeatFlowsAndOutletTemp(datetime, case_conditions);
+            assign("m_dot_calc", as_double("m_dot"));       // [kg/s]
+        }
 
         // Calculate Pumping Power
-        double W_dot_pump_W = (as_double("pump_spec_power") * as_double("m_dot")) / as_double("pump_eff");    // [W]
+        double W_dot_pump_W = (as_double("pump_spec_power") * as_double("m_dot_calc")) / as_double("pump_eff");    // [W]
 
         // Assign Outputs
         assign("T_out", sim_results.T_out);             // [C]
@@ -267,6 +285,8 @@ public:
         assign("Q_loss", sim_results.Q_loss / 1.E3);    // [MWt]
         assign("T_amb", weather.m_tdry);                // [C]
         assign("W_dot_pump", W_dot_pump_W / 1.E6);      // [MWe]
+        
+        
 
     }
 

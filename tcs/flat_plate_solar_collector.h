@@ -314,6 +314,7 @@ public:
     const double MaxMassFlow();         // [kg/s]
     const double EstimateHeatGain(double POA /*W/m2*/, double T_in /*C*/, double T_amb /*C*/);                              // [kWt]
     const HeatAndTempInOut HeatFlowsAndOutletTemp(const tm &timestamp, const ExternalConditions &external_conditions);      // [C]
+    const HeatAndTempInOut TargetTempOut(const tm& timestamp, ExternalConditions& external_conditions, const double T_out, double& m_dot_solved);      // [C]
     void SetFluid(int fluid_id);
     HTFProperties* GetFluid();
 private:
@@ -442,6 +443,32 @@ private:
     HTFProperties* flat_plate_htf_;
     tm* timestamp_;
     ExternalConditions* external_conditions_;
+};
+
+class C_mono_eq_T_out_fp : public C_monotonic_equation
+{
+
+public:
+
+    C_mono_eq_T_out_fp(FlatPlateArray* flat_plate_array,
+        const tm* timestamp,
+        ExternalConditions* external_conditions,
+        const double T_out_target)
+        :
+        flat_plate_array_(flat_plate_array),
+        timestamp_(timestamp),
+        external_conditions_(external_conditions),
+        T_out_target_(T_out_target)
+    {
+
+    }
+    virtual int operator()(double mdot_fp /*kg/s*/, double* diff_T_out /*C*/);
+
+private:
+    FlatPlateArray* flat_plate_array_;
+    const tm* timestamp_;
+    ExternalConditions* external_conditions_;
+    const double T_out_target_;
 };
 
 #endif // __FLAT_PLATE_SOLAR_COLLECTOR__

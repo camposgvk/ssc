@@ -739,6 +739,38 @@ const HeatAndTempInOut FlatPlateArray::HeatFlowsAndOutletTemp(const tm &timestam
     return heat_and_temp_in_out;
 }
 
+const HeatAndTempInOut FlatPlateArray::TargetTempOut(const tm& timestamp, ExternalConditions& external_conditions, const double T_out, double& m_dot_solved)
+{
+    // Vary mass flow to hit target temperature
+    double mdot_min = 0.001;    //[kg/s]
+    double mdot_max = 100;        //[kg/s]
+
+    C_mono_eq_T_out_fp c_eq_1(this, &timestamp, &external_conditions, T_out);
+    C_monotonic_eq_solver c_solver(c_eq_1);
+    c_solver.settings(1.e-5, 1000, mdot_min, mdot_max, false);
+
+    double mdot_fp_solved, tol_solved;
+    mdot_fp_solved = tol_solved = std::numeric_limits<double>::quiet_NaN();
+    int iter_solved = -1;
+    int solver_code = 0;
+
+    try {
+        solver_code = c_solver.solve(mdot_min, mdot_max, 0., mdot_fp_solved, tol_solved, iter_solved);
+    }
+    catch (C_csp_exception) {
+        throw(C_csp_exception("C_MEQ__mdot_fp -> C_MEQ__T_in_fp received exception from mono equation solver"));
+    }
+
+    // Run Solved Case
+    external_conditions.inlet_fluid_flow.m_dot = mdot_fp_solved; //[kg/s]
+    m_dot_solved = mdot_fp_solved;
+
+    // Simulate
+    HeatAndTempInOut sim_results = HeatFlowsAndOutletTemp(timestamp, external_conditions);
+
+    return sim_results;
+}
+
 void FlatPlateArray::SetFluid(int fluid_id)
 {
     fluid_.SetFluid(fluid_id);
@@ -865,6 +897,20 @@ int C_MEQ__T_in_fp::operator()(double T_in_fp /*C*/, double* diff_T_in_fp /*C*/)
     dT_cold_ = T_in_fp_calcd - m_T_loop_in_;
 
     *diff_T_in_fp = T_in_fp - T_in_fp_calcd;
+
+    return 0;
+}
+
+int C_mono_eq_T_out_fp::operator()(double mdot_fp /*kg/s*/, double* diff_T_out /*C*/)
+{
+    // Set mass flow in
+    this->external_conditions_->inlet_fluid_flow.m_dot = mdot_fp; //[kg/s]
+
+    // Simulate
+    HeatAndTempInOut sim_results = this->flat_plate_array_->HeatFlowsAndOutletTemp(*this->timestamp_, *this->external_conditions_);
+
+    // Calculate Error
+    *diff_T_out = T_out_target_ - sim_results.T_out;    // [C]
 
     return 0;
 }
