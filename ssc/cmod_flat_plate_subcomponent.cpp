@@ -54,7 +54,9 @@ static var_info _cm_vtab_flat_plate_subcomponent[] = {
     { SSC_INPUT,        SSC_NUMBER,      "start_step",                "Hour of year",                                                                     "-",            "",               "",               "*",                       "",                      "" },
     { SSC_INPUT,        SSC_NUMBER,      "m_dot",                     "Fluid mass flow rate into flat plate collector",                                   "kg/s",         "",               "",               "*",                       "",                      "" },
     { SSC_INPUT,        SSC_NUMBER,      "T_in",                      "Fluid temperature into flat plate collector",                                      "C",            "",               "",               "*",                       "",                      "" },                                                                                                                                                                                                                                     
-    { SSC_INPUT,        SSC_NUMBER,      "T_out_spec",                "Fluid temperature into flat plate collector",                                      "C",            "",               "",               "",                        "",                      "" },
+    { SSC_INPUT,        SSC_NUMBER,      "T_out_spec",                "Specified Target Outlet Temperature",                                              "C",            "",               "",               "",                        "",                      "" },
+    { SSC_INPUT,        SSC_NUMBER,      "m_dot_min",                 "Min mass flow rate",                                                               "kg/s",         "",               "",               "",                        "",                      "" },
+    { SSC_INPUT,        SSC_NUMBER,      "m_dot_max",                 "Max mass flow rate",                                                               "kg/s",         "",               "",               "",                        "",                      "" },
 
 
     // Flat Plate Collectors                                                                                                                                                                                                             
@@ -265,7 +267,8 @@ public:
         if (is_assigned("T_out_spec") == true && as_double("T_out_spec") > 0)
         {
             double m_dot_solved;
-            sim_results = flat_plate_array_.TargetTempOut(datetime, case_conditions, as_double("T_out_spec"), m_dot_solved);
+            sim_results = flat_plate_array_.TargetTempOut(datetime, case_conditions, as_double("T_out_spec"),
+                as_double("m_dot_min"), as_double("m_dot_max"), m_dot_solved);
             assign("m_dot_calc", m_dot_solved); // [kg/s]
         }
 

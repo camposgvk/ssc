@@ -739,11 +739,12 @@ const HeatAndTempInOut FlatPlateArray::HeatFlowsAndOutletTemp(const tm &timestam
     return heat_and_temp_in_out;
 }
 
-const HeatAndTempInOut FlatPlateArray::TargetTempOut(const tm& timestamp, ExternalConditions& external_conditions, const double T_out, double& m_dot_solved)
+const HeatAndTempInOut FlatPlateArray::TargetTempOut(const tm& timestamp, ExternalConditions& external_conditions, const double T_out,
+    const double m_dot_min, const double m_dot_max, double& m_dot_solved)
 {
     // Vary mass flow to hit target temperature
-    double mdot_min = 0.001;    //[kg/s]
-    double mdot_max = 100;        //[kg/s]
+    double mdot_min = m_dot_min;        //[kg/s]
+    double mdot_max = m_dot_max;        //[kg/s]
 
     C_mono_eq_T_out_fp c_eq_1(this, &timestamp, &external_conditions, T_out);
     C_monotonic_eq_solver c_solver(c_eq_1);

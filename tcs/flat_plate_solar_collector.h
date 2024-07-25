@@ -314,7 +314,8 @@ public:
     const double MaxMassFlow();         // [kg/s]
     const double EstimateHeatGain(double POA /*W/m2*/, double T_in /*C*/, double T_amb /*C*/);                              // [kWt]
     const HeatAndTempInOut HeatFlowsAndOutletTemp(const tm &timestamp, const ExternalConditions &external_conditions);      // [C]
-    const HeatAndTempInOut TargetTempOut(const tm& timestamp, ExternalConditions& external_conditions, const double T_out, double& m_dot_solved);      // [C]
+    const HeatAndTempInOut TargetTempOut(const tm& timestamp, ExternalConditions& external_conditions, const double T_out,
+        const double m_dot_min, const double m_dot_max, double& m_dot_solved);      // [C]
     void SetFluid(int fluid_id);
     HTFProperties* GetFluid();
 private:
